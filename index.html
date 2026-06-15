@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="th" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safety AI Training Feedback</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.1/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --bg-color: #f0f4f8;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #212529;
+            --border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        [data-bs-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: rgba(30, 30, 30, 0.7);
+            --text-color: #f8f9fa;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(217,100%,76%,0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(142,71%,45%,0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, #0d6efd 0%, #198754 100%);
+            color: white;
+            border-radius: 0 0 2rem 2rem;
+            padding: 4rem 1rem 3rem;
+            box-shadow: 0 10px 30px rgba(13, 110, 253, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url('data:image/svg+xml,<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
+        }
+
+        /* Star Rating */
+        .star-rating {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .star-rating input {
+            display: none;
+        }
+
+        .star-rating label {
+            cursor: pointer;
+            font-size: 2rem;
+            color: #ddd;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        [data-bs-theme="dark"] .star-rating label {
+            color: #444;
+        }
+
+        .star-rating label:hover,
+        .star-rating label:hover ~ label,
+        .star-rating input:checked ~ label {
+            color: #ffc107;
+        }
+
+        .star-rating label:active {
+            transform: scale(0.8);
+        }
+
+        /* Custom Checkbox */
+        .topic-checkbox .form-check-input:checked {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        /* Heatmap Table */
+        .heatmap-table th, .heatmap-table td {
+            text-align: center;
+            vertical-align: middle;
+            border-color: var(--border-color);
+        }
+        
+        .heatmap-cell {
+            transition: background-color 0.3s;
+            color: #000;
+            font-weight: 500;
+            border-radius: 4px;
+        }
+
+        [data-bs-theme="dark"] .heatmap-cell {
+            color: #fff;
+            text-shadow: 0 0 2px rgba(0,0,0,0.8);
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.8);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.3s;
+        }
+        
+        [data-bs-theme="dark"] .loading-overlay {
+            background: rgba(0,0,0,0.8);
+        }
+
+        .loading-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Spinner -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="text-center">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h5 class="mt-3 text-primary fw-bold" id="loadingText">กำลังดำเนินการ...</h5>
+        </div>
+    </div>
+
+    <!-- Theme Toggle -->
+    <button class="btn btn-light rounded-circle shadow theme-toggle" id="btnThemeToggle">
+        <i class="bi bi-moon-fill" id="themeIcon"></i>
+    </button>
+
+    <!-- Hero Header -->
+    <header class="hero-section text-center mb-5">
+        <div class="container position-relative z-1">
+            <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
+                <i class="bi bi-shield-check display-4"></i>
+                <i class="bi bi-robot display-4"></i>
+            </div>
+            <h1 class="fw-bold mb-2">Safety AI Training Feedback</h1>
+            <p class="lead mb-3">แบบประเมินความพึงพอใจการอบรมและศึกษาดูงานด้าน Safety AI</p>
+            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-medium border shadow-sm">
+                <i class="bi bi-incognito me-2"></i> ข้อมูลการประเมินนี้จะถูกเก็บแบบไม่ระบุตัวตน (Anonymous)
+            </span>
+        </div>
+    </header>
+
+    <div class="container pb-5">
+        
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-pills nav-fill mb-4 glass-card p-2" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold" id="form-tab" data-bs-toggle="tab" data-bs-target="#form-pane" type="button" role="tab">
+                    <i class="bi bi-ui-checks me-2"></i> แบบประเมิน
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard-pane" type="button" role="tab">
+                    <i class="bi bi-graph-up-arrow me-2"></i> Dashboard
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+            
+            <!-- ================= FORM PANE ================= -->
+            <div class="tab-pane fade show active" id="form-pane" role="tabpanel" tabindex="0">
+                <form id="feedbackForm">
+                    
+                    <!-- SECTION 1: General -->
+                    <div class="glass-card p-4 p-md-5 mb-4">
+                        <h4 class="fw-bold mb-4 border-bottom pb-2 text-primary">
+                            <i class="bi bi-1-circle-fill me-2"></i> ส่วนที่ 1: ประเมินการอบรมโดยรวม
+                        </h4>
+                        
+                        <div class="row g-4" id="section1-container">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: Stations -->
+                    <div class="glass-card p-4 p-md-5 mb-4">
+                        <h4 class="fw-bold mb-4 border-bottom pb-2 text-success">
+                            <i class="bi bi-2-circle-fill me-2"></i> ส่วนที่ 2: ประเมินสถานีสาธิต AI หน้างาน
+                        </h4>
+                        
+                        <div class="accordion shadow-sm" id="stationsAccordion">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- SECTION 3: Suggestion -->
+                    <div class="glass-card p-4 p-md-5 mb-4">
+                        <h4 class="fw-bold mb-3 border-bottom pb-2 text-info">
+                            <i class="bi bi-3-circle-fill me-2"></i> ส่วนที่ 3: ข้อเสนอแนะเพิ่มเติม
+                        </h4>
+                        <div class="form-floating">
+                            <textarea class="form-control bg-transparent" id="suggestion" name="suggestion" style="height: 150px" placeholder="Leave a comment here"></textarea>
+                            <label for="suggestion">ข้อเสนอแนะเพิ่มเติม หรือสิ่งที่อยากให้ปรับปรุง...</label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="text-center mt-4 mb-5">
+                        <button type="submit" class="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow-lg fw-bold w-100 w-md-auto d-inline-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-send-fill"></i> ส่งแบบประเมิน
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ================= DASHBOARD PANE ================= -->
+            <div class="tab-pane fade" id="dashboard-pane" role="tabpanel" tabindex="0">
+                
+                <!-- Summary Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="glass-card p-3 text-center h-100">
+                            <div class="text-primary mb-2"><i class="bi bi-people-fill fs-1"></i></div>
+                            <h6 class="text-muted mb-1">ผู้ตอบทั้งหมด</h6>
+                            <h2 class="fw-bold mb-0" id="dashTotal">0</h2>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="glass-card p-3 text-center h-100">
+                            <div class="text-warning mb-2"><i class="bi bi-star-fill fs-1"></i></div>
+                            <h6 class="text-muted mb-1">เฉลี่ยการอบรม</h6>
+                            <h2 class="fw-bold mb-0" id="dashAvgTraining">0.0</h2>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="glass-card p-3 text-center h-100">
+                            <div class="text-success mb-2"><i class="bi bi-buildings-fill fs-1"></i></div>
+                            <h6 class="text-muted mb-1">เฉลี่ยทุก Station</h6>
+                            <h2 class="fw-bold mb-0" id="dashAvgStation">0.0</h2>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="glass-card p-3 text-center h-100">
+                            <div class="text-danger mb-2"><i class="bi bi-trophy-fill fs-1"></i></div>
+                            <h6 class="text-muted mb-1">Station ยอดนิยม</h6>
+                            <h4 class="fw-bold mb-0 mt-2 text-truncate" id="dashTopStation">-</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 1 -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="glass-card p-4 h-100">
+                            <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill text-primary"></i> คะแนนเฉลี่ยแต่ละ Station</h5>
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="glass-card p-4 h-100">
+                            <h5 class="fw-bold mb-3"><i class="bi bi-radar text-info"></i> เปรียบเทียบคะแนนสถานี</h5>
+                            <div style="max-height: 300px; display: flex; justify-content: center;">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2 -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-5">
+                        <div class="glass-card p-4 h-100">
+                            <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill text-warning"></i> Top Knowledge Topics</h5>
+                            <canvas id="doughnutChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="glass-card p-4 h-100 overflow-auto">
+                            <h5 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap-fill text-success"></i> Heatmap ความรู้ที่ได้รับ</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered heatmap-table" id="heatmapTable">
+                                    <thead>
+                                        <tr id="heatmapHeader"></tr>
+                                    </thead>
+                                    <tbody id="heatmapBody"></tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex justify-content-end align-items-center gap-2 mt-2">
+                                <small class="text-muted">น้อย</small>
+                                <div style="width: 100px; height: 10px; background: linear-gradient(90deg, rgba(25,135,84,0.1), rgba(25,135,84,1)); border-radius: 5px;"></div>
+                                <small class="text-muted">มาก</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-muted border-top border-secondary-subtle">
+        <div class="container">
+            <p class="mb-0 fw-medium"><i class="bi bi-shield-check"></i> Safety AI Learning & Feedback System</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.1/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // ==========================================
+        // 1. CONFIGURATION
+        // ==========================================
+        const SUPABASE_URL = "https://fmirkxuwssypdmhdevfz.supabase.co"; 
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtaXJreHV3c3N5cGRtaGRldmZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0Njc5MDcsImV4cCI6MjA5NzA0MzkwN30.at5j3E077Z5tuOYlUAJ8Cr62f5yjr4MUIP95rUFiAXA";
+        
+        let supabase = null;
+        if(SUPABASE_URL && SUPABASE_ANON_KEY) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        // Data Definitions
+        const section1Questions = [
+            { id: 'ai_basic_rating', label: 'ความเข้าใจพื้นฐานเกี่ยวกับ AI' },
+            { id: 'ai_incident_rating', label: 'การใช้ AI ช่วยวิเคราะห์เหตุการณ์ความปลอดภัย' },
+            { id: 'ai_safety_rating', label: 'การประยุกต์ใช้ AI กับงาน Safety จริง' },
+            { id: 'trainer_time_rating', label: 'เวลาในการสอนของวิทยากร' }
+        ];
+
+        const stationsList = [
+            { id: 1, key: 'station1', name: 'AI Blank Checker', icon: 'bi-search' },
+            { id: 2, key: 'station2', name: 'Compressor Dissemble', icon: 'bi-tools' },
+            { id: 3, key: 'station3', name: 'Operator Enter Inside', icon: 'bi-person-bounding-box' },
+            { id: 4, key: 'station4', name: 'EV Station', icon: 'bi-ev-station' }
+        ];
+
+        const topicsList = [
+            "การประยุกต์ใช้ AI ในงาน Safety",
+            "การตรวจจับพฤติกรรมไม่ปลอดภัย (Unsafe Act)",
+            "การตรวจจับสภาพไม่ปลอดภัย (Unsafe Condition)",
+            "การเฝ้าระวังและแจ้งเตือนอัตโนมัติ",
+            "การวิเคราะห์ความเสี่ยง",
+            "การป้องกันอุบัติเหตุ",
+            "การใช้กล้อง AI และ Computer Vision",
+            "การนำ AI ไปประยุกต์ใช้ในพื้นที่จริง",
+            "ได้แนวคิดในการพัฒนาโครงการ AI"
+        ];
+
+        // Chart Instances
+        let chartBar, chartRadar, chartDoughnut;
+
+        // ==========================================
+        // 2. UI GENERATION
+        // ==========================================
+        
+        function generateStarRating(name, isRequired = true) {
+            let html = `<div class="star-rating">`;
+            for (let i = 5; i >= 1; i--) {
+                html += `
+                    <input type="radio" id="${name}_${i}" name="${name}" value="${i}" ${isRequired ? 'required' : ''}>
+                    <label for="${name}_${i}" title="${i} ดาว"><i class="bi bi-star-fill"></i></label>
+                `;
+            }
+            html += `</div>`;
+            return html;
+        }
+
+        function initUI() {
+            // Section 1
+            const sec1Container = document.getElementById('section1-container');
+            section1Questions.forEach(q => {
+                sec1Container.innerHTML += `
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded h-100 bg-body-tertiary">
+                            <label class="form-label fw-medium mb-2 d-block">${q.label} <span class="text-danger">*</span></label>
+                            ${generateStarRating(q.id)}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Section 2
+            const stationsAccordion = document.getElementById('stationsAccordion');
+            stationsList.forEach((st, index) => {
+                const isOpen = index === 0 ? 'show' : '';
+                const isCollapsed = index === 0 ? '' : 'collapsed';
+
+                let topicsHtml = `<div class="row g-2 mt-2">`;
+                topicsList.forEach((topic, tIdx) => {
+                    topicsHtml += `
+                        <div class="col-md-6 col-lg-4">
+                            <div class="form-check topic-checkbox bg-body p-2 rounded border border-secondary-subtle">
+                                <input class="form-check-input ms-1" type="checkbox" name="${st.key}_topics[]" value="${topic}" id="${st.key}_topic_${tIdx}">
+                                <label class="form-check-label ms-2" for="${st.key}_topic_${tIdx}" style="font-size:0.9rem;">
+                                    ${topic}
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                });
+                topicsHtml += `</div>`;
+
+                stationsAccordion.innerHTML += `
+                    <div class="accordion-item bg-transparent">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold fs-5 ${isCollapsed}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${st.id}">
+                                <i class="bi ${st.icon} me-2 text-success"></i> Station ${st.id}: ${st.name}
+                            </button>
+                        </h2>
+                        <div id="collapse${st.id}" class="accordion-collapse collapse ${isOpen}" data-bs-parent="#stationsAccordion">
+                            <div class="accordion-body bg-body-tertiary">
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold mb-2">ให้คะแนนความชอบสถานีนี้ <span class="text-danger">*</span></label>
+                                    ${generateStarRating(`${st.key}_rating`)}
+                                </div>
+                                <div>
+                                    <label class="form-label fw-bold mb-1">หัวข้อความรู้ที่ได้รับ <span class="text-muted fw-normal fs-6">(เลือกได้มากกว่า 1 ข้อ)</span></label>
+                                    ${topicsHtml}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // ==========================================
+        // 3. THEME TOGGLE
+        // ==========================================
+        const themeToggleBtn = document.getElementById('btnThemeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const htmlEl = document.documentElement;
+
+        function updateTheme(theme) {
+            htmlEl.setAttribute('data-bs-theme', theme);
+            if (theme === 'dark') {
+                themeIcon.classList.replace('bi-moon-fill', 'bi-sun-fill');
+                themeToggleBtn.classList.replace('btn-light', 'btn-dark');
+            } else {
+                themeIcon.classList.replace('bi-sun-fill', 'bi-moon-fill');
+                themeToggleBtn.classList.replace('btn-dark', 'btn-light');
+            }
+            localStorage.setItem('theme', theme);
+            if (chartBar) updateChartsTheme(theme);
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = htmlEl.getAttribute('data-bs-theme');
+            updateTheme(currentTheme === 'light' ? 'dark' : 'light');
+        });
+
+        // Initialize Theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        updateTheme(savedTheme);
+
+        // ==========================================
+        // 4. FORM SUBMISSION
+        // ==========================================
+        function showLoading(show, text = 'กำลังดำเนินการ...') {
+            const overlay = document.getElementById('loadingOverlay');
+            document.getElementById('loadingText').innerText = text;
+            if (show) overlay.classList.add('active');
+            else overlay.classList.remove('active');
+        }
+
+        document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!supabase) {
+                Swal.fire('ข้อผิดพลาด', 'ยังไม่ได้ตั้งค่าเชื่อมต่อ Supabase', 'error');
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            
+            // Check if all ratings are filled
+            const requiredRatings = [
+                'ai_basic_rating', 'ai_incident_rating', 'ai_safety_rating', 'trainer_time_rating',
+                'station1_rating', 'station2_rating', 'station3_rating', 'station4_rating'
+            ];
+
+            for (let field of requiredRatings) {
+                if (!formData.get(field)) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'ข้อมูลไม่ครบถ้วน',
+                        text: 'กรุณาให้คะแนน (ดาว) ให้ครบทุกหัวข้อ',
+                        confirmButtonText: 'ตกลง'
+                    });
+                    return;
+                }
+            }
+
+            // Prepare Data Payload
+            const payload = {
+                ai_basic_rating: parseInt(formData.get('ai_basic_rating')),
+                ai_incident_rating: parseInt(formData.get('ai_incident_rating')),
+                ai_safety_rating: parseInt(formData.get('ai_safety_rating')),
+                trainer_time_rating: parseInt(formData.get('trainer_time_rating')),
+                
+                station1_rating: parseInt(formData.get('station1_rating')),
+                station1_topics: formData.getAll('station1_topics[]'),
+                
+                station2_rating: parseInt(formData.get('station2_rating')),
+                station2_topics: formData.getAll('station2_topics[]'),
+                
+                station3_rating: parseInt(formData.get('station3_rating')),
+                station3_topics: formData.getAll('station3_topics[]'),
+                
+                station4_rating: parseInt(formData.get('station4_rating')),
+                station4_topics: formData.getAll('station4_topics[]'),
+                
+                suggestion: formData.get('suggestion') || null
+            };
+
+            showLoading(true, 'กำลังบันทึกข้อมูล...');
+
+            try {
+                const { error } = await supabase.from('safety_ai_feedback').insert([payload]);
+                
+                if (error) throw error;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'บันทึกสำเร็จ!',
+                    text: 'ขอบคุณสำหรับข้อเสนอแนะของท่าน',
+                    confirmButtonColor: '#198754'
+                });
+
+                e.target.reset();
+                window.scrollTo({top: 0, behavior: 'smooth'});
+                
+                // Refresh Dashboard Data if tab is active or just pre-fetch
+                fetchDashboardData();
+
+            } catch (error) {
+                console.error(error);
+                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // ==========================================
+        // 5. DASHBOARD & CHARTS LOGIC
+        // ==========================================
+        
+        document.getElementById('dashboard-tab').addEventListener('shown.bs.tab', () => {
+            fetchDashboardData();
+        });
+
+        async function fetchDashboardData() {
+            if (!supabase) return;
+            
+            showLoading(true, 'กำลังโหลด Dashboard...');
+            try {
+                const { data, error } = await supabase
+                    .from('safety_ai_feedback')
+                    .select('*');
+                
+                if (error) throw error;
+
+                processDashboardData(data);
+            } catch (error) {
+                console.error('Fetch error:', error);
+                Swal.fire('ดึงข้อมูลล้มเหลว', error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function processDashboardData(data) {
+            if (!data || data.length === 0) {
+                document.getElementById('dashTotal').innerText = '0';
+                return;
+            }
+
+            const total = data.length;
+            document.getElementById('dashTotal').innerText = total;
+
+            let sumTraining = 0;
+            let sumSt1=0, sumSt2=0, sumSt3=0, sumSt4=0;
+            const topicCounts = {};
+            const heatmapData = { station1: {}, station2: {}, station3: {}, station4: {} };
+
+            // Initialize topic counters
+            topicsList.forEach(t => {
+                topicCounts[t] = 0;
+                [1,2,3,4].forEach(s => heatmapData[`station${s}`][t] = 0);
+            });
+
+            data.forEach(row => {
+                // Section 1 sum
+                sumTraining += (row.ai_basic_rating + row.ai_incident_rating + row.ai_safety_rating + row.trainer_time_rating) / 4;
+                
+                // Station Sums
+                sumSt1 += row.station1_rating;
+                sumSt2 += row.station2_rating;
+                sumSt3 += row.station3_rating;
+                sumSt4 += row.station4_rating;
+
+                // Process Topics
+                [1,2,3,4].forEach(s => {
+                    const stTopics = row[`station${s}_topics`] || [];
+                    stTopics.forEach(t => {
+                        if (topicCounts[t] !== undefined) {
+                            topicCounts[t]++;
+                            heatmapData[`station${s}`][t]++;
+                        }
+                    });
+                });
+            });
+
+            const avgTraining = (sumTraining / total).toFixed(1);
+            const avgSt1 = (sumSt1 / total).toFixed(1);
+            const avgSt2 = (sumSt2 / total).toFixed(1);
+            const avgSt3 = (sumSt3 / total).toFixed(1);
+            const avgSt4 = (sumSt4 / total).toFixed(1);
+
+            const allStationAvgs = [parseFloat(avgSt1), parseFloat(avgSt2), parseFloat(avgSt3), parseFloat(avgSt4)];
+            const avgStationTotal = (allStationAvgs.reduce((a,b)=>a+b,0) / 4).toFixed(1);
+            
+            // Top Station
+            const maxAvg = Math.max(...allStationAvgs);
+            const topStationIdx = allStationAvgs.indexOf(maxAvg);
+            
+            document.getElementById('dashAvgTraining').innerText = avgTraining;
+            document.getElementById('dashAvgStation').innerText = avgStationTotal;
+            document.getElementById('dashTopStation').innerText = stationsList[topStationIdx].name;
+
+            // Prepare Chart Data
+            renderCharts(allStationAvgs, topicCounts, heatmapData);
+        }
+
+        function getChartColors() {
+            const isDark = htmlEl.getAttribute('data-bs-theme') === 'dark';
+            return {
+                text: isDark ? '#e0e0e0' : '#333333',
+                grid: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+            };
+        }
+
+        function updateChartsTheme(theme) {
+            if(!chartBar) return;
+            const colors = getChartColors();
+            
+            [chartBar, chartRadar, chartDoughnut].forEach(chart => {
+                if(chart.options.scales) {
+                    if(chart.options.scales.x) {
+                        chart.options.scales.x.ticks.color = colors.text;
+                        if(chart.options.scales.x.grid) chart.options.scales.x.grid.color = colors.grid;
+                    }
+                    if(chart.options.scales.y) {
+                        chart.options.scales.y.ticks.color = colors.text;
+                        if(chart.options.scales.y.grid) chart.options.scales.y.grid.color = colors.grid;
+                    }
+                    if(chart.options.scales.r) {
+                        chart.options.scales.r.pointLabels.color = colors.text;
+                        chart.options.scales.r.grid.color = colors.grid;
+                        chart.options.scales.r.angleLines.color = colors.grid;
+                    }
+                }
+                if(chart.options.plugins.legend) {
+                    chart.options.plugins.legend.labels.color = colors.text;
+                }
+                chart.update();
+            });
+        }
+
+        function renderCharts(stationAvgs, topicCounts, heatmapData) {
+            const colors = getChartColors();
+            const stationNames = stationsList.map(s => `St ${s.id}: ${s.name}`);
+            
+            // --- 1. Bar Chart ---
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            if (chartBar) chartBar.destroy();
+            chartBar = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: stationNames,
+                    datasets: [{
+                        label: 'คะแนนเฉลี่ย',
+                        data: stationAvgs,
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                        borderColor: 'rgb(13, 110, 253)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, max: 5, ticks: { color: colors.text }, grid: { color: colors.grid } },
+                        x: { ticks: { color: colors.text }, grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // --- 2. Radar Chart ---
+            const ctxRadar = document.getElementById('radarChart').getContext('2d');
+            if (chartRadar) chartRadar.destroy();
+            chartRadar = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: stationNames,
+                    datasets: [{
+                        label: 'คะแนนเฉลี่ย',
+                        data: stationAvgs,
+                        backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                        borderColor: 'rgb(25, 135, 84)',
+                        pointBackgroundColor: 'rgb(25, 135, 84)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true, max: 5,
+                            pointLabels: { color: colors.text, font: { family: 'Prompt' } },
+                            grid: { color: colors.grid },
+                            angleLines: { color: colors.grid },
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // --- 3. Doughnut Chart (Top Topics) ---
+            // Sort topics by count
+            const sortedTopics = Object.entries(topicCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5); // Top 5
+            
+            const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+            if (chartDoughnut) chartDoughnut.destroy();
+            chartDoughnut = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: sortedTopics.map(t => t[0]),
+                    datasets: [{
+                        data: sortedTopics.map(t => t[1]),
+                        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#0dcaf0', '#d63384'],
+                        borderWidth: 2,
+                        borderColor: 'transparent'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: colors.text, font: { family: 'Prompt', size: 10 } } }
+                    }
+                }
+            });
+
+            // --- 4. Heatmap Table ---
+            renderHeatmapTable(heatmapData);
+        }
+
+        function renderHeatmapTable(heatmapData) {
+            const thead = document.getElementById('heatmapHeader');
+            const tbody = document.getElementById('heatmapBody');
+            
+            // Header
+            let thHtml = `<th>Topics</th>`;
+            stationsList.forEach(st => thHtml += `<th>St ${st.id}</th>`);
+            thead.innerHTML = thHtml;
+
+            // Find Max for intensity calculation
+            let maxVal = 0;
+            topicsList.forEach(t => {
+                [1,2,3,4].forEach(s => {
+                    if(heatmapData[`station${s}`][t] > maxVal) maxVal = heatmapData[`station${s}`][t];
+                });
+            });
+
+            // Body
+            let tbHtml = '';
+            topicsList.forEach(topic => {
+                let shortTopic = topic.length > 30 ? topic.substring(0,30) + '...' : topic;
+                tbHtml += `<tr><td class="text-start" style="font-size: 0.8rem;" title="${topic}">${shortTopic}</td>`;
+                
+                [1,2,3,4].forEach(s => {
+                    const val = heatmapData[`station${s}`][topic];
+                    // Calculate intensity color (Green base)
+                    const intensity = maxVal > 0 ? val / maxVal : 0;
+                    const bgColor = `rgba(25, 135, 84, ${intensity})`; // Success green
+                    
+                    tbHtml += `<td class="heatmap-cell" style="background-color: ${val > 0 ? bgColor : 'transparent'}">${val}</td>`;
+                });
+                tbHtml += `</tr>`;
+            });
+            tbody.innerHTML = tbHtml;
+        }
+
+        // ==========================================
+        // 6. INITIALIZATION & REAL-TIME
+        // ==========================================
+        
+        // Generate UI on load
+        initUI();
+
+        // Optional: Real-time Supabase Subscription
+        if(supabase) {
+            supabase
+              .channel('public:safety_ai_feedback')
+              .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'safety_ai_feedback' }, payload => {
+                  // If on Dashboard tab, auto refresh
+                  const dashboardTab = document.getElementById('dashboard-pane');
+                  if(dashboardTab.classList.contains('active')) {
+                      fetchDashboardData();
+                  }
+              })
+              .subscribe();
+        }
+
+    </script>
+</body>
+</html>
