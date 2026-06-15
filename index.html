@@ -225,9 +225,17 @@
                     
                     <!-- SECTION 1: General -->
                     <div class="glass-card p-4 p-md-5 mb-4">
-                        <h4 class="fw-bold mb-4 border-bottom pb-2 text-primary">
+                        <h4 class="fw-bold mb-3 border-bottom pb-2 text-primary">
                             <i class="bi bi-1-circle-fill me-2"></i> ส่วนที่ 1: ประเมินการอบรมโดยรวม
                         </h4>
+
+                        <!-- เพิ่มคำอธิบายการให้คะแนนที่นี่ -->
+                        <div class="alert alert-info py-2 mb-4 d-flex align-items-center bg-primary-subtle border-0" role="alert" style="font-size: 0.95rem;">
+                            <i class="bi bi-info-circle-fill me-2 fs-5 text-primary"></i>
+                            <div>
+                                <strong>คำอธิบายการให้คะแนน:</strong> 1 ดาว = น้อยที่สุด | 3 ดาว = ปานกลาง | 5 ดาว = มากที่สุด
+                            </div>
+                        </div>
                         
                         <div class="row g-4" id="section1-container">
                             <!-- Injected via JS -->
@@ -236,9 +244,16 @@
 
                     <!-- SECTION 2: Stations -->
                     <div class="glass-card p-4 p-md-5 mb-4">
-                        <h4 class="fw-bold mb-4 border-bottom pb-2 text-success">
+                        <h4 class="fw-bold mb-3 border-bottom pb-2 text-success">
                             <i class="bi bi-2-circle-fill me-2"></i> ส่วนที่ 2: ประเมินสถานีสาธิต AI หน้างาน
                         </h4>
+
+                        <div class="alert alert-success py-2 mb-4 d-flex align-items-center bg-success-subtle border-0" role="alert" style="font-size: 0.95rem;">
+                            <i class="bi bi-info-circle-fill me-2 fs-5 text-success"></i>
+                            <div>
+                                <strong>คำอธิบายการให้คะแนน:</strong> 1 ดาว = น้อยที่สุด | 3 ดาว = ปานกลาง | 5 ดาว = มากที่สุด
+                            </div>
+                        </div>
                         
                         <div class="accordion shadow-sm" id="stationsAccordion">
                             <!-- Injected via JS -->
@@ -379,9 +394,9 @@
 
         // Data Definitions
         const section1Questions = [
-            { id: 'ai_basic_rating', label: 'ความเข้าใจพื้นฐานเกี่ยวกับ AI' },
-            { id: 'ai_incident_rating', label: 'การใช้ AI ช่วยวิเคราะห์เหตุการณ์ความปลอดภัย' },
+            { id: 'ai_basic_rating', label: 'ความรู้พื้นฐานเกี่ยวกับsafety' },
             { id: 'ai_safety_rating', label: 'การประยุกต์ใช้ AI กับงาน Safety จริง' },
+            { id: 'ai_incident_rating', label: 'ความรู้และความเข้าใจในการสอนของวิทยากร' },
             { id: 'trainer_time_rating', label: 'เวลาในการสอนของวิทยากร' }
         ];
 
