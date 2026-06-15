@@ -371,9 +371,10 @@
         const SUPABASE_URL = "https://fmirkxuwssypdmhdevfz.supabase.co"; 
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtaXJreHV3c3N5cGRtaGRldmZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0Njc5MDcsImV4cCI6MjA5NzA0MzkwN30.at5j3E077Z5tuOYlUAJ8Cr62f5yjr4MUIP95rUFiAXA";
         
-        let supabase = null;
+        let supabaseClient = null;
         if(SUPABASE_URL && SUPABASE_ANON_KEY) {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // ใช้ชื่อ supabaseClient เพื่อไม่ให้ชนกับ window.supabase ที่มาจากไลบรารี CDN
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
         // Data Definitions
@@ -523,7 +524,7 @@
         document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            if (!supabase) {
+            if (!supabaseClient) {
                 Swal.fire('ข้อผิดพลาด', 'ยังไม่ได้ตั้งค่าเชื่อมต่อ Supabase', 'error');
                 return;
             }
@@ -573,7 +574,7 @@
             showLoading(true, 'กำลังบันทึกข้อมูล...');
 
             try {
-                const { error } = await supabase.from('safety_ai_feedback').insert([payload]);
+                const { error } = await supabaseClient.from('safety_ai_feedback').insert([payload]);
                 
                 if (error) throw error;
 
@@ -607,11 +608,11 @@
         });
 
         async function fetchDashboardData() {
-            if (!supabase) return;
+            if (!supabaseClient) return;
             
             showLoading(true, 'กำลังโหลด Dashboard...');
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('safety_ai_feedback')
                     .select('*');
                 
@@ -860,8 +861,8 @@
         initUI();
 
         // Optional: Real-time Supabase Subscription
-        if(supabase) {
-            supabase
+        if(supabaseClient) {
+            supabaseClient
               .channel('public:safety_ai_feedback')
               .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'safety_ai_feedback' }, payload => {
                   // If on Dashboard tab, auto refresh
